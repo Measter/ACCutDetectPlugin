@@ -33,6 +33,7 @@ namespace ACCutDetectorPlugin
 
         private static bool m_forwardingEnabled = false;
         private static string m_configName = "CutPluginConfig.ini";
+        private static string m_lastTrackLayout = String.Empty;
 
 
         static void Main( string[] args )
@@ -224,8 +225,14 @@ namespace ACCutDetectorPlugin
 
             if( packetID == ACSProtocol.NewSession )
             {
-                Console.WriteLine( $"Loading cut file for {track}-{trackLayout}" );
-                CutTester.LoadTrack( track, trackLayout );
+                string currentLayout = $"{track}-{trackLayout}";
+
+                if (m_lastTrackLayout != currentLayout )
+                {
+                    Console.WriteLine( $"Loading cut file for {track}-{trackLayout}" );
+                    CutTester.LoadTrack( track, trackLayout );
+                    m_lastTrackLayout = $"{track}-{trackLayout}";
+                }
 
                 Console.WriteLine( $"New session started: {m_sessionType}" );
                 m_logFile.WriteLine( $"[Session] : Session ended {prevSessionType}" );
