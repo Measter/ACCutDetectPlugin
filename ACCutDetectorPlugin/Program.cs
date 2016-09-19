@@ -7,6 +7,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using IniParser;
+using IniParser.Model;
 
 namespace ACCutDetectorPlugin
 {
@@ -20,44 +22,55 @@ namespace ACCutDetectorPlugin
 
         private static SessionType m_sessionType = SessionType.None;
 
-        private static IPEndPoint m_serverEndPoint = new IPEndPoint( IPAddress.Loopback, 12001 );
-        private static IPEndPoint m_serverRecieve = new IPEndPoint( IPAddress.Loopback, 11001 );
-        private static IPEndPoint m_forwardEndPoint = new IPEndPoint( IPAddress.Loopback, 12000 );
-        private static IPEndPoint m_forwardRecieve = new IPEndPoint( IPAddress.Loopback, 11000 );
+        private static IPEndPoint m_serverDataPoint;
+        private static IPEndPoint m_serverCommandPoint;
+        private static IPEndPoint m_clientDataPoint;
+        private static IPEndPoint m_clientCommandPoint;
 
 
         private static UdpClient m_forwardClient;
         private static UdpClient m_serverClient;
+
+        private static bool m_forwardingEnabled = false;
+        private static string m_configName = "CutPluginConfig.ini";
 
 
         static void Main( string[] args )
         {
             Console.WriteLine( $"Assetto Corsa Cut Detection Plugin - Version {m_version}" );
 
+            if( !ReadConfig() )
+            {
+                Console.WriteLine( "Config error, Exiting." );
+                return;
+            }
+
             string filename = $"cutlog-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}.log";
             Console.WriteLine( $"Opening log file {filename}" );
-            m_logFile = new StreamWriter( filename, false, Encoding.UTF8 );
+            m_logFile = new StreamWriter(filename, false, Encoding.UTF8);
 
-            Console.WriteLine( $"Opening Forwarding UDP Client at {m_forwardEndPoint.Address}:{m_forwardEndPoint.Port}" );
-            m_forwardClient = new UdpClient( m_forwardRecieve );
-            Console.WriteLine( "Client Opened." );
+            if( m_forwardingEnabled )
+            {
+                Console.WriteLine( $"Opening Forwarding UDP Client at {m_clientDataPoint.Address}:{m_clientDataPoint.Port}" );
+                m_forwardClient = new UdpClient( m_clientCommandPoint );
+                Console.WriteLine( "Client Opened." );
+                Thread commandThread = new Thread( CommandForwardTask );
+                commandThread.Start();
+            }
 
-            Console.WriteLine( $"Opening UDP Client at {m_serverEndPoint.Address}:{m_serverEndPoint.Port}" );
-            m_serverClient = new UdpClient( m_serverEndPoint );
+            Console.WriteLine( $"Opening UDP Client at {m_serverDataPoint.Address}:{m_serverDataPoint.Port}" );
+            m_serverClient = new UdpClient( m_serverDataPoint );
             Console.WriteLine( "Client Opened. Waiting for server." );
-
-            Thread commandThread = new Thread(CommandForwardTask);
-            commandThread.Start();
 
             while( true )
             {
-                byte[] bytes = m_serverClient.Receive( ref m_serverRecieve );
-                m_forwardClient.Send(bytes, bytes.Length, m_forwardEndPoint);
+                byte[] bytes = m_serverClient.Receive( ref m_serverCommandPoint );
+                m_forwardClient.Send( bytes, bytes.Length, m_clientDataPoint );
 
                 BinaryReader reader = new BinaryReader( new MemoryStream( bytes ) );
 
                 ACSProtocol packetID = (ACSProtocol)reader.ReadByte();
-                
+
                 switch( packetID )
                 {
                     case ACSProtocol.CarInfo:
@@ -71,20 +84,18 @@ namespace ACCutDetectorPlugin
 
                     case ACSProtocol.NewSession: // Is immediately followed by session info.
                     case ACSProtocol.SessionInfo:
-                        HandleNewSessionInfo(reader, packetID);
+                        HandleNewSessionInfo( reader, packetID );
                         break;
-
-
 
                     case ACSProtocol.NewConnection:
                     case ACSProtocol.ConnectionClosed:
-                        HandleConnectionChange(reader, packetID);
+                        HandleConnectionChange( reader, packetID );
                         break;
-
 
                     case ACSProtocol.CarUpdate:
-                        HandleCarUpdate(reader);
+                        HandleCarUpdate( reader );
                         break;
+
                     case ACSProtocol.Error:
                         Console.WriteLine( "Error from server:" );
                         Console.WriteLine( $" - {ReadUnicodeString( reader )}" );
@@ -96,44 +107,92 @@ namespace ACCutDetectorPlugin
             }
         }
 
-        private static void HandleCarUpdate(BinaryReader reader)
+        private static bool ReadConfig()
+        {
+            if( !File.Exists( m_configName ) )
+            {
+                Console.WriteLine( "Error: Config file missing." );
+                return false;
+            }
+
+            FileIniDataParser iniParser = new FileIniDataParser();
+            IniData data = iniParser.ReadFile( m_configName );
+
+            IPAddress ip;
+            try
+            {
+                var serverSection = data.Sections["server"];
+                ip = IPAddress.Parse( serverSection["address"] );
+                m_serverCommandPoint = new IPEndPoint( ip, Int32.Parse( serverSection["commandport"] ) );
+                m_serverDataPoint = new IPEndPoint( ip, Int32.Parse( serverSection["dataport"] ) );
+            } catch( Exception ex )
+            {
+                Console.WriteLine( "Error: Misconfigured server details." );
+                Console.WriteLine( ex.ToString() );
+                return false;
+            }
+
+            if( !data.Sections.ContainsSection( "forwarding" ) )
+                return true;
+
+            try
+            {
+                var forwardSection = data.Sections["forwarding"];
+
+                m_forwardingEnabled = Boolean.Parse( forwardSection["enabled"] );
+                if( !m_forwardingEnabled )
+                    return true;
+
+                ip = IPAddress.Parse( forwardSection["address"] );
+                m_clientCommandPoint = new IPEndPoint( ip, Int32.Parse( forwardSection["commandport"] ) );
+                m_clientDataPoint = new IPEndPoint( ip, Int32.Parse( forwardSection["dataport"] ) );
+            } catch( Exception ex )
+            {
+                Console.WriteLine( "Error: Misconfigured forwarding." );
+                Console.WriteLine( ex.ToString() );
+                return false;
+            }
+
+            return true;
+        }
+
+        private static void HandleCarUpdate( BinaryReader reader )
         {
             var carID = reader.ReadByte();
-            Vector3F pos = ReadPosition(reader); // Position.
-            Vector3F vel = ReadPosition(reader); // Velocity vector.
+            Vector3F pos = ReadPosition( reader ); // Position.
+            Vector3F vel = ReadPosition( reader ); // Velocity vector.
 
             var curDriver = m_driversFromCarID[carID];
 
-            curDriver.UpdatePositionAndSpeed(pos, vel);
+            curDriver.UpdatePositionAndSpeed( pos, vel );
 
             string cornerName;
-            if (curDriver.DidCut(out cornerName))
+            if( curDriver.DidCut( out cornerName ) )
             {
                 curDriver.IncrementCut();
-                Console.WriteLine($"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}");
-                m_logFile.WriteLine($"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}");
+                Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
+                m_logFile.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
             }
 
             m_logFile.Flush();
         }
 
-        private static void HandleConnectionChange(BinaryReader reader, ACSProtocol packetID)
+        private static void HandleConnectionChange( BinaryReader reader, ACSProtocol packetID )
         {
-            string driverName = ReadUnicodeString(reader); // Driver name.
-            string driverGUID = ReadUnicodeString(reader); // Driver GUID.
+            string driverName = ReadUnicodeString( reader ); // Driver name.
+            string driverGUID = ReadUnicodeString( reader ); // Driver GUID.
             var carID = reader.ReadByte();
 
-            if (packetID == ACSProtocol.NewConnection)
+            if( packetID == ACSProtocol.NewConnection )
             {
-                Console.WriteLine($"Driver joined: {driverName}");
+                Console.WriteLine( $"Driver joined: {driverName}" );
                 Driver curDriver;
-                if (m_driversFromGUID.ContainsKey(driverGUID))
+                if( m_driversFromGUID.ContainsKey( driverGUID ) )
                 {
                     curDriver = m_driversFromGUID[driverGUID];
-                }
-                else
+                } else
                 {
-                    curDriver = new Driver(driverGUID);
+                    curDriver = new Driver( driverGUID );
                     m_driversFromGUID[driverGUID] = curDriver;
                 }
 
@@ -141,38 +200,37 @@ namespace ACCutDetectorPlugin
                 curDriver.CarID = carID;
                 curDriver.ResetPosition();
                 m_driversFromCarID[carID] = curDriver;
-            }
-            else
+            } else
             {
-                Console.WriteLine($"Driver left: {driverName}");
-                m_driversFromCarID.Remove(carID);
+                Console.WriteLine( $"Driver left: {driverName}" );
+                m_driversFromCarID.Remove( carID );
             }
         }
-        
-        private static void HandleNewSessionInfo(BinaryReader reader, ACSProtocol packetID)
+
+        private static void HandleNewSessionInfo( BinaryReader reader, ACSProtocol packetID )
         {
             reader.ReadByte(); // Version.
             reader.ReadByte(); // Session index.
             reader.ReadByte(); // Current session index.
             reader.ReadByte(); // Session count.
-            ReadUnicodeString(reader); // Server name.
+            ReadUnicodeString( reader ); // Server name.
 
-            string track = ReadAsciiString(reader);
-            string trackLayout = ReadAsciiString(reader);
-            ReadAsciiString(reader); // Session name.
+            string track = ReadAsciiString( reader );
+            string trackLayout = ReadAsciiString( reader );
+            ReadAsciiString( reader ); // Session name.
 
             var prevSessionType = m_sessionType;
-            m_sessionType = (SessionType) reader.ReadByte();
+            m_sessionType = (SessionType)reader.ReadByte();
 
-            if (packetID == ACSProtocol.NewSession)
+            if( packetID == ACSProtocol.NewSession )
             {
-                Console.WriteLine($"Loading cut file for {track}-{trackLayout}");
-                CutTester.LoadTrack(track, trackLayout);
+                Console.WriteLine( $"Loading cut file for {track}-{trackLayout}" );
+                CutTester.LoadTrack( track, trackLayout );
 
-                Console.WriteLine($"New session started: {m_sessionType}");
-                m_logFile.WriteLine($"[Session] : Session ended {prevSessionType}");
+                Console.WriteLine( $"New session started: {m_sessionType}" );
+                m_logFile.WriteLine( $"[Session] : Session ended {prevSessionType}" );
 
-                foreach (var driver in m_driversFromGUID)
+                foreach( var driver in m_driversFromGUID )
                     driver.Value.ResetCutCount();
 
                 m_logFile.Flush();
@@ -181,11 +239,11 @@ namespace ACCutDetectorPlugin
 
         private static void CommandForwardTask()
         {
-            while (true)
+            while( true )
             {
-                byte[] bytes = m_forwardClient.Receive( ref m_forwardRecieve );
-                Console.WriteLine("Bytes Recieved from forward.");
-                m_serverClient.Send( bytes, bytes.Length, m_serverRecieve );
+                byte[] bytes = m_forwardClient.Receive( ref m_clientCommandPoint );
+                Console.WriteLine( "Bytes Recieved from forward." );
+                m_serverClient.Send( bytes, bytes.Length, m_serverCommandPoint );
             }
         }
 
@@ -197,7 +255,7 @@ namespace ACCutDetectorPlugin
             bw.Write( (byte)ACSProtocolCommands.RealtimeposInterval );
             bw.Write( (UInt16)77 ); // 15hz.
 
-            client.Send( buffer, (int)bw.BaseStream.Length, m_serverRecieve );
+            client.Send( buffer, (int)bw.BaseStream.Length, m_serverCommandPoint );
         }
 
 
