@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using IniParser;
@@ -173,9 +174,31 @@ namespace ACCutDetectorPlugin
                 curDriver.IncrementCut();
                 Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
                 m_logFile.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
+
+                if (m_sessionType == SessionType.Practice)
+                {
+                    SendMessageToCar(carID, $"[Warning]: Cut on corner {cornerName}.");
+                    Console.WriteLine($"Warning sent to {curDriver.Name}");
+                }
+                else if (curDriver.CutCount == 10)
+                {
+                    SendMessageToCar(carID, "[Warning]: Track limit volation!");
+                    Console.WriteLine( $"Warning sent to {curDriver.Name}" );
+                }
             }
 
             m_logFile.Flush();
+        }
+
+        private static void SendMessageToCar( byte carID, string message )
+        {
+            var buffer = new byte[255];
+            BinaryWriter bw = new BinaryWriter( new MemoryStream( buffer ) );
+
+            bw.Write( (byte)ACSProtocolCommands.SendChat );
+            bw.Write( carID );
+            WriteUnicodeString( bw, message );
+            m_serverClient.Send( buffer, (int)bw.BaseStream.Length, m_serverCommandPoint );
         }
 
         private static void HandleConnectionChange( BinaryReader reader, ACSProtocol packetID )
@@ -277,6 +300,12 @@ namespace ACCutDetectorPlugin
         {
             byte length = br.ReadByte();
             return Encoding.UTF32.GetString( br.ReadBytes( length * 4 ) );
+        }
+
+        private static void WriteUnicodeString( BinaryWriter bw, string message )
+        {
+            bw.Write( (byte)message.Length );
+            bw.Write( Encoding.UTF32.GetBytes( message ) );
         }
     }
 }
