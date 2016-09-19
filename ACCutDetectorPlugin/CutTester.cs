@@ -8,27 +8,27 @@ namespace ACCutDetectorPlugin
     {
         private static readonly List<Line> m_lines = new List<Line>();
 
-        public static void LoadTrack(string track, string trackLayout)
+        public static void LoadTrack( string track, string trackLayout )
         {
             m_lines.Clear();
             string filename = $"cut_files\\{track}-{trackLayout}.csv";
 
-            if (!File.Exists(filename))
+            if( !File.Exists( filename ) )
             {
-                Console.WriteLine("Unable to open cut file.");
+                Console.WriteLine( "Unable to open cut file." );
                 return;
             }
 
-            foreach (string line in File.ReadAllLines(filename))
+            foreach( string line in File.ReadAllLines( filename ) )
             {
-                if (line.StartsWith("corner;"))
+                if( line.StartsWith( "corner;" ) )
                     continue;
 
-                string[] parts = line.Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries);
+                string[] parts = line.Split( new[] { ';' }, StringSplitOptions.RemoveEmptyEntries );
 
-                if (parts.Length < 5)
+                if( parts.Length < 5 )
                 {
-                    Console.WriteLine($"Log: Invalid line: {line}");
+                    Console.WriteLine( $"Log: Invalid line: {line}" );
                     continue;
                 }
 
@@ -54,15 +54,15 @@ namespace ACCutDetectorPlugin
                     continue;
                 }
 
-                m_lines.Add(new Line(parts[0], startx, starty, endx, endy));
+                m_lines.Add( new Line( parts[0], startx, starty, endx, endy ) );
             }
         }
 
-        public static bool TestCutLines(Vector2F lastPosition, Vector2F currentPosition, out string cornerName)
+        public static bool TestCutLines( Vector2F lastPosition, Vector2F currentPosition, out string cornerName )
         {
-            foreach (Line line in m_lines)
+            foreach( Line line in m_lines )
             {
-                if (line.LineSegementsIntersect(lastPosition, currentPosition))
+                if( line.LineSegementsIntersect( lastPosition, currentPosition ) )
                 {
                     cornerName = line.Name;
                     return true;
@@ -76,16 +76,25 @@ namespace ACCutDetectorPlugin
 
     public class Line
     {
-        public Line(string name, double startX, double startY, double endX, double endY)
+        public Line( string name, double startX, double startY, double endX, double endY )
         {
             Name = name;
-            Start = new Vector2F(startX, startY);
-            End = new Vector2F(endX, endY);
+            Start = new Vector2F( startX, startY );
+            End = new Vector2F( endX, endY );
         }
 
-        public string Name { get; }
-        public Vector2F Start { get; }
-        public Vector2F End { get; }
+        public string Name
+        {
+            get;
+        }
+        public Vector2F Start
+        {
+            get;
+        }
+        public Vector2F End
+        {
+            get;
+        }
 
 
         // Following function obtained from http://www.codeproject.com/Tips/862988/Find-the-Intersection-Point-of-Two-Line-Segments

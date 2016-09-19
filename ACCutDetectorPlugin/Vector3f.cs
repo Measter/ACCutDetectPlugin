@@ -12,16 +12,16 @@ namespace ACCutDetectorPlugin
         public float Y => m_y;
         public float Z => m_z;
 
-        public Vector3F(float x, float y, float z)
+        public Vector3F( float x, float y, float z )
         {
             m_x = x;
             m_y = y;
             m_z = z;
         }
 
-        public double Length() => Math.Sqrt(X*X + Y*Y + Z*Z);
+        public double Length() => Math.Sqrt( X * X + Y * Y + Z * Z );
 
-        public static Vector3F operator -(Vector3F v, Vector3F w) => new Vector3F(v.X - w.X, v.Y - w.Y, v.Z - w.Z);
+        public static Vector3F operator -( Vector3F v, Vector3F w ) => new Vector3F( v.X - w.X, v.Y - w.Y, v.Z - w.Z );
 
         public override string ToString() => $"[{m_x}, {m_y}, {m_z}]";
     }

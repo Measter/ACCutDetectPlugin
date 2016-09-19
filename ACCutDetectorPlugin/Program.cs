@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using IniParser;
 using IniParser.Model;
 
@@ -48,7 +46,7 @@ namespace ACCutDetectorPlugin
 
             string filename = $"cutlog-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}.log";
             Console.WriteLine( $"Opening log file {filename}" );
-            m_logFile = new StreamWriter(filename, false, Encoding.UTF8);
+            m_logFile = new StreamWriter( filename, false, Encoding.UTF8 );
 
             if( m_forwardingEnabled )
             {
@@ -229,7 +227,7 @@ namespace ACCutDetectorPlugin
             {
                 string currentLayout = $"{track}-{trackLayout}";
 
-                if (m_lastTrackLayout != currentLayout )
+                if( m_lastTrackLayout != currentLayout )
                 {
                     Console.WriteLine( $"Loading cut file for {track}-{trackLayout}" );
                     CutTester.LoadTrack( track, trackLayout );

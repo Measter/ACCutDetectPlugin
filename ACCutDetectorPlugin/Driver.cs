@@ -19,7 +19,7 @@ namespace ACCutDetectorPlugin
         {
             get; set;
         }
-        
+
         public Vector3F CurrentPosition
         {
             get; private set;
@@ -30,7 +30,10 @@ namespace ACCutDetectorPlugin
             get; private set;
         }
 
-        public UInt16 CutCount { get; private set; }
+        public UInt16 CutCount
+        {
+            get; private set;
+        }
 
         public Driver( string driverGUID )
         {
@@ -43,7 +46,7 @@ namespace ACCutDetectorPlugin
 
         public void ResetPosition()
         {
-            CurrentPosition = LastPosition = new Vector3F(Single.NaN, Single.NaN, Single.NaN);
+            CurrentPosition = LastPosition = new Vector3F( Single.NaN, Single.NaN, Single.NaN );
         }
 
         public void ResetCutCount()
@@ -56,7 +59,7 @@ namespace ACCutDetectorPlugin
             CutCount++;
         }
 
-        public void UpdatePositionAndSpeed(Vector3F pos, Vector3F vel)
+        public void UpdatePositionAndSpeed( Vector3F pos, Vector3F vel )
         {
             m_speed = vel.Length() * 3.6; // Km/H
 
@@ -64,22 +67,22 @@ namespace ACCutDetectorPlugin
             CurrentPosition = pos;
         }
 
-        public bool DidCut(out string cornerName)
+        public bool DidCut( out string cornerName )
         {
             cornerName = String.Empty;
 
             // If the driver is on their first update since connecting, they obviously can't cut.
-            if (Double.IsNaN(LastPosition.X))
+            if( Double.IsNaN( LastPosition.X ) )
                 return false;
 
 
             // Do speed test. May not be going fast enough to punish for cutting.
-            if (m_speed < 50)
+            if( m_speed < 50 )
                 return false;
 
 
-            return CutTester.TestCutLines(new Vector2F(LastPosition.X, LastPosition.Z),
-                                          new Vector2F(CurrentPosition.X,CurrentPosition.Z), out cornerName);
+            return CutTester.TestCutLines( new Vector2F( LastPosition.X, LastPosition.Z ),
+                                           new Vector2F( CurrentPosition.X, CurrentPosition.Z ), out cornerName );
         }
     }
 }

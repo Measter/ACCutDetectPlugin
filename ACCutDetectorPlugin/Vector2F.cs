@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ACCutDetectorPlugin
+﻿namespace ACCutDetectorPlugin
 {
     // Following class obtained from http://www.codeproject.com/Tips/862988/Find-the-Intersection-Point-of-Two-Line-Segments
     public class Vector2F
