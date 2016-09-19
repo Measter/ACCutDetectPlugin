@@ -66,7 +66,9 @@ namespace ACCutDetectorPlugin
             while( true )
             {
                 byte[] bytes = m_serverClient.Receive( ref m_serverCommandPoint );
-                m_forwardClient.Send( bytes, bytes.Length, m_clientDataPoint );
+
+                if( m_forwardingEnabled )
+                    m_forwardClient.Send( bytes, bytes.Length, m_clientDataPoint );
 
                 BinaryReader reader = new BinaryReader( new MemoryStream( bytes ) );
 
