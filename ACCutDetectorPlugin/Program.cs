@@ -242,7 +242,6 @@ namespace ACCutDetectorPlugin
             while( true )
             {
                 byte[] bytes = m_forwardClient.Receive( ref m_clientCommandPoint );
-                Console.WriteLine( "Bytes Recieved from forward." );
                 m_serverClient.Send( bytes, bytes.Length, m_serverCommandPoint );
             }
         }
