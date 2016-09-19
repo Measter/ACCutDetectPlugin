@@ -31,6 +31,8 @@ namespace ACCutDetectorPlugin
         private static UdpClient m_serverClient;
 
         private static bool m_forwardingEnabled = false;
+        private static bool m_overrideUpdateRate = false;
+        private static UInt16 m_updateRate = 77;
         private static string m_configName = "CutPluginConfig.ini";
         private static string m_lastTrackLayout = String.Empty;
 
@@ -134,9 +136,6 @@ namespace ACCutDetectorPlugin
                 return false;
             }
 
-            if( !data.Sections.ContainsSection( "forwarding" ) )
-                return true;
-
             try
             {
                 var forwardSection = data.Sections["forwarding"];
@@ -151,6 +150,19 @@ namespace ACCutDetectorPlugin
             } catch( Exception ex )
             {
                 Console.WriteLine( "Error: Misconfigured forwarding." );
+                Console.WriteLine( ex.ToString() );
+                return false;
+            }
+
+            try
+            {
+                var forwardSection = data.Sections["updates"];
+
+                m_overrideUpdateRate = Boolean.Parse( forwardSection["override"] );
+                m_updateRate = (UInt16)( 1000 / UInt16.Parse( forwardSection["rate"] ) ); // Needs to convert Hz to MS.
+            } catch( Exception ex )
+            {
+                Console.WriteLine( "Error: Misconfigured updates." );
                 Console.WriteLine( ex.ToString() );
                 return false;
             }
@@ -175,14 +187,13 @@ namespace ACCutDetectorPlugin
                 Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
                 m_logFile.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
 
-                if (m_sessionType == SessionType.Practice)
+                if( m_sessionType == SessionType.Practice )
                 {
-                    SendMessageToCar(carID, $"[Warning]: Cut on corner {cornerName}.");
-                    Console.WriteLine($"Warning sent to {curDriver.Name}");
-                }
-                else if (curDriver.CutCount == 10)
+                    SendMessageToCar( carID, $"[Warning]: Cut on corner {cornerName}." );
+                    Console.WriteLine( $"Warning sent to {curDriver.Name}" );
+                } else if( curDriver.CutCount == 10 )
                 {
-                    SendMessageToCar(carID, "[Warning]: Track limit volation!");
+                    SendMessageToCar( carID, "[Warning]: Track limit volation!" );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
                 }
             }
@@ -248,6 +259,9 @@ namespace ACCutDetectorPlugin
 
             if( packetID == ACSProtocol.NewSession )
             {
+                if( !m_forwardingEnabled || m_overrideUpdateRate )
+                    ActivateRealTimeReporting();
+
                 string currentLayout = $"{track}-{trackLayout}";
 
                 if( m_lastTrackLayout != currentLayout )
@@ -272,19 +286,23 @@ namespace ACCutDetectorPlugin
             while( true )
             {
                 byte[] bytes = m_forwardClient.Receive( ref m_clientCommandPoint );
+
+                if( m_overrideUpdateRate && bytes[0] == (int)ACSProtocolCommands.RealtimeposInterval )
+                    continue;
+
                 m_serverClient.Send( bytes, bytes.Length, m_serverCommandPoint );
             }
         }
 
-        private static void ActivateRealTimeReporting( UdpClient client )
+        private static void ActivateRealTimeReporting()
         {
             byte[] buffer = new byte[4];
             BinaryWriter bw = new BinaryWriter( new MemoryStream( buffer ) );
 
             bw.Write( (byte)ACSProtocolCommands.RealtimeposInterval );
-            bw.Write( (UInt16)77 ); // 15hz.
+            bw.Write( m_updateRate );
 
-            client.Send( buffer, (int)bw.BaseStream.Length, m_serverCommandPoint );
+            m_serverClient.Send( buffer, (int)bw.BaseStream.Length, m_serverCommandPoint );
         }
 
 
