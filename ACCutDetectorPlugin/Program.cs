@@ -33,6 +33,8 @@ namespace ACCutDetectorPlugin
         private static bool m_forwardingEnabled = false;
         private static bool m_overrideUpdateRate = false;
         private static UInt16 m_updateRate = 77;
+        private static bool m_detailedPracticeWarnings = true;
+        private static int m_warningInterval = 10;
         private static string m_configName = "CutPluginConfig.ini";
         private static string m_lastTrackLayout = String.Empty;
 
@@ -125,10 +127,10 @@ namespace ACCutDetectorPlugin
             IPAddress ip;
             try
             {
-                var serverSection = data.Sections["server"];
-                ip = IPAddress.Parse( serverSection["address"] );
-                m_serverCommandPoint = new IPEndPoint( ip, Int32.Parse( serverSection["commandport"] ) );
-                m_serverDataPoint = new IPEndPoint( ip, Int32.Parse( serverSection["dataport"] ) );
+                var section = data.Sections["server"];
+                ip = IPAddress.Parse( section["address"] );
+                m_serverCommandPoint = new IPEndPoint( ip, Int32.Parse( section["commandport"] ) );
+                m_serverDataPoint = new IPEndPoint( ip, Int32.Parse( section["dataport"] ) );
             } catch( Exception ex )
             {
                 Console.WriteLine( "Error: Misconfigured server details." );
@@ -138,15 +140,15 @@ namespace ACCutDetectorPlugin
 
             try
             {
-                var forwardSection = data.Sections["forwarding"];
+                var section = data.Sections["forwarding"];
 
-                m_forwardingEnabled = Boolean.Parse( forwardSection["enabled"] );
+                m_forwardingEnabled = Boolean.Parse( section["enabled"] );
                 if( !m_forwardingEnabled )
                     return true;
 
-                ip = IPAddress.Parse( forwardSection["address"] );
-                m_clientCommandPoint = new IPEndPoint( ip, Int32.Parse( forwardSection["commandport"] ) );
-                m_clientDataPoint = new IPEndPoint( ip, Int32.Parse( forwardSection["dataport"] ) );
+                ip = IPAddress.Parse( section["address"] );
+                m_clientCommandPoint = new IPEndPoint( ip, Int32.Parse( section["commandport"] ) );
+                m_clientDataPoint = new IPEndPoint( ip, Int32.Parse( section["dataport"] ) );
             } catch( Exception ex )
             {
                 Console.WriteLine( "Error: Misconfigured forwarding." );
@@ -156,13 +158,26 @@ namespace ACCutDetectorPlugin
 
             try
             {
-                var forwardSection = data.Sections["updates"];
+                var section = data.Sections["updates"];
 
-                m_overrideUpdateRate = Boolean.Parse( forwardSection["override"] );
-                m_updateRate = (UInt16)( 1000 / UInt16.Parse( forwardSection["rate"] ) ); // Needs to convert Hz to MS.
+                m_overrideUpdateRate = Boolean.Parse( section["override"] );
+                m_updateRate = (UInt16)( 1000 / UInt16.Parse( section["rate"] ) ); // Needs to convert Hz to MS.
             } catch( Exception ex )
             {
                 Console.WriteLine( "Error: Misconfigured updates." );
+                Console.WriteLine( ex.ToString() );
+                return false;
+            }
+
+            try
+            {
+                var section = data.Sections["warnings"];
+
+                m_detailedPracticeWarnings = Boolean.Parse( section["detailedpractice"] );
+                m_warningInterval = Int32.Parse( section["interval"] );
+            } catch( Exception ex )
+            {
+                Console.WriteLine( "Error: Misconfigured warnings." );
                 Console.WriteLine( ex.ToString() );
                 return false;
             }
@@ -187,11 +202,11 @@ namespace ACCutDetectorPlugin
                 Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
                 m_logFile.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
 
-                if( m_sessionType == SessionType.Practice )
+                if( m_detailedPracticeWarnings && m_sessionType == SessionType.Practice )
                 {
                     SendMessageToCar( carID, $"[Warning]: Cut on corner {cornerName}." );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
-                } else if( curDriver.CutCount == 10 )
+                } else if( curDriver.CutCount % m_warningInterval == 0 )
                 {
                     SendMessageToCar( carID, "[Warning]: Track limit volation!" );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
