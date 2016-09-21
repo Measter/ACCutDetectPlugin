@@ -204,7 +204,7 @@ namespace ACCutDetectorPlugin
 
                 if( m_detailedPracticeWarnings && m_sessionType == SessionType.Practice )
                 {
-                    SendMessageToCar( carID, $"[Warning]: Cut on corner {cornerName}." );
+                    SendMessageToCar( carID, $"[Warning]: Track limit violation, turn {cornerName}." );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
                 } else if( curDriver.CutCount % m_warningInterval == 0 )
                 {
