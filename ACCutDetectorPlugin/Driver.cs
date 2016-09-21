@@ -4,7 +4,7 @@ namespace ACCutDetectorPlugin
 {
     public class Driver
     {
-        public double m_speed;
+        private double m_speed;
 
         public byte CarID
         {
@@ -78,6 +78,10 @@ namespace ACCutDetectorPlugin
 
             // Do speed test. May not be going fast enough to punish for cutting.
             if( m_speed < 50 )
+                return false;
+
+            // Absurd speeds are down to lag, so should also ignore.
+            if ( m_speed > 400 )
                 return false;
 
 
