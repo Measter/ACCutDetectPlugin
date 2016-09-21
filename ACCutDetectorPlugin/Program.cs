@@ -81,11 +81,14 @@ namespace ACCutDetectorPlugin
                 {
                     case ACSProtocol.CarInfo:
                     case ACSProtocol.ClientEvent:
-                    case ACSProtocol.LapCompleted:
                     case ACSProtocol.Version:
                     case ACSProtocol.Chat:
                     case ACSProtocol.ClientLoaded:
                     case ACSProtocol.EndSession:
+                        break;
+
+                    case ACSProtocol.LapCompleted:
+                        HandleLapCompleted(reader);
                         break;
 
                     case ACSProtocol.NewSession: // Is immediately followed by session info.
@@ -185,6 +188,14 @@ namespace ACCutDetectorPlugin
             return true;
         }
 
+        private static void HandleLapCompleted( BinaryReader reader )
+        {
+            var carID = reader.ReadByte();
+            var curDriver = m_driversFromCarID[carID];
+
+            curDriver.IncrementLapcount();
+        }
+
         private static void HandleCarUpdate( BinaryReader reader )
         {
             var carID = reader.ReadByte();
@@ -199,7 +210,7 @@ namespace ACCutDetectorPlugin
             if( curDriver.DidCut( out cornerName ) )
             {
                 curDriver.IncrementCut();
-                Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
+                Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.Laps} - {curDriver.CutCount}" );
                 m_logFile.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
 
                 if( m_detailedPracticeWarnings && m_sessionType == SessionType.Practice )
@@ -289,8 +300,11 @@ namespace ACCutDetectorPlugin
                 Console.WriteLine( $"New session started: {m_sessionType}" );
                 m_logFile.WriteLine( $"[Session] : Session ended {prevSessionType}" );
 
-                foreach( var driver in m_driversFromGUID )
+                foreach (var driver in m_driversFromGUID)
+                {
+                    driver.Value.ResetLapCount();
                     driver.Value.ResetCutCount();
+                }
 
                 m_logFile.Flush();
             }

@@ -35,6 +35,10 @@ namespace ACCutDetectorPlugin
             get; private set;
         }
 
+        public UInt16 Laps { get; private set; }
+
+
+
         public Driver( string driverGUID )
         {
             Name = String.Empty;
@@ -57,6 +61,16 @@ namespace ACCutDetectorPlugin
         public void IncrementCut()
         {
             CutCount++;
+        }
+
+        public void ResetLapCount()
+        {
+            Laps = 0;
+        }
+
+        public void IncrementLapcount()
+        {
+            Laps++;
         }
 
         public void UpdatePositionAndSpeed( Vector3F pos, Vector3F vel )
