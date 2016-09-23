@@ -37,6 +37,8 @@ namespace ACCutDetectorPlugin
         private static int m_warningInterval = 10;
         private static string m_configName = "CutPluginConfig.ini";
         private static string m_lastTrackLayout = String.Empty;
+        private static bool m_loggingEnabled = false;
+        private static bool m_loggingPracticeEnabled = false;
 
 
         static void Main( string[] args )
@@ -49,9 +51,12 @@ namespace ACCutDetectorPlugin
                 return;
             }
 
-            string filename = $"cutlog-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}.log";
-            Console.WriteLine( $"Opening log file {filename}" );
-            m_logFile = new StreamWriter( filename, false, Encoding.UTF8 );
+            if( m_loggingEnabled )
+            {
+                string filename = $"cutlog-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}.log";
+                Console.WriteLine( $"Opening log file {filename}" );
+                m_logFile = new StreamWriter( filename, false, Encoding.UTF8 ); 
+            }
 
             if( m_forwardingEnabled )
             {
@@ -185,6 +190,19 @@ namespace ACCutDetectorPlugin
                 return false;
             }
 
+            try
+            {
+                var section = data.Sections["logging"];
+
+                m_loggingEnabled = Boolean.Parse( section["logging"] );
+                m_loggingPracticeEnabled = Boolean.Parse( section["practicelogging"] );
+            } catch( Exception ex )
+            {
+                Console.WriteLine( "Error: Misconfigured logging." );
+                Console.WriteLine( ex.ToString() );
+                return false;
+            }
+
             return true;
         }
 
@@ -211,7 +229,12 @@ namespace ACCutDetectorPlugin
             {
                 curDriver.IncrementCut();
                 Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.Laps} - {curDriver.CutCount}" );
-                m_logFile.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
+
+                if (m_loggingEnabled && (m_sessionType != SessionType.Practice || m_loggingPracticeEnabled))
+                {
+                    m_logFile.WriteLine($"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}");
+                    m_logFile.Flush();  // Force flush in case process exits before writing to disk.
+                }
 
                 if( m_detailedPracticeWarnings && m_sessionType == SessionType.Practice )
                 {
@@ -223,8 +246,6 @@ namespace ACCutDetectorPlugin
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
                 }
             }
-
-            m_logFile.Flush();
         }
 
         private static void SendMessageToCar( byte carID, string message )
