@@ -239,11 +239,11 @@ namespace ACCutDetectorPlugin
                 curDriver.IncrementCut();
                 Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.Laps} - {curDriver.CutCount}" );
 
-                WriteLog( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
+                WriteLog( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.Laps} - {curDriver.CutCount}" );
 
                 if( m_detailedPracticeWarnings && m_sessionType == SessionType.Practice )
                 {
-                    SendMessageToCar( carID, $"[Warning]: Track limit violation, turn {cornerName}." );
+                    SendMessageToCar( carID, $"[Warning]: Track limit violation, {cornerName}." );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
                 } else if( curDriver.CutCount % m_warningInterval == 0 )
                 {
