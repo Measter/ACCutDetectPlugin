@@ -206,6 +206,17 @@ namespace ACCutDetectorPlugin
             return true;
         }
 
+
+        private static void WriteLog( string message )
+        {
+            if( m_loggingEnabled && ( m_sessionType != SessionType.Practice || m_loggingPracticeEnabled ) )
+            {
+                m_logFile.WriteLine( message );
+                m_logFile.Flush(); // Force flush in case process exits before writing to disk.
+            }
+        }
+
+
         private static void HandleLapCompleted( BinaryReader reader )
         {
             var carID = reader.ReadByte();
@@ -230,11 +241,7 @@ namespace ACCutDetectorPlugin
                 curDriver.IncrementCut();
                 Console.WriteLine( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.Laps} - {curDriver.CutCount}" );
 
-                if (m_loggingEnabled && (m_sessionType != SessionType.Practice || m_loggingPracticeEnabled))
-                {
-                    m_logFile.WriteLine($"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}");
-                    m_logFile.Flush();  // Force flush in case process exits before writing to disk.
-                }
+                WriteLog( $"[Cut] : {curDriver.Name} - {cornerName} - {curDriver.CutCount}" );
 
                 if( m_detailedPracticeWarnings && m_sessionType == SessionType.Practice )
                 {
@@ -319,15 +326,14 @@ namespace ACCutDetectorPlugin
                 }
 
                 Console.WriteLine( $"New session started: {m_sessionType}" );
-                m_logFile.WriteLine( $"[Session] : Session ended {prevSessionType}" );
+
+                WriteLog( $"[Session] : Session ended {prevSessionType}" );
 
                 foreach (var driver in m_driversFromGUID)
                 {
                     driver.Value.ResetLapCount();
                     driver.Value.ResetCutCount();
                 }
-
-                m_logFile.Flush();
             }
         }
 
