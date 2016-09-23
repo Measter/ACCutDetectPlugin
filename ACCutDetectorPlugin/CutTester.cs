@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 
 namespace ACCutDetectorPlugin
@@ -33,22 +34,22 @@ namespace ACCutDetectorPlugin
                 }
 
                 double startx, starty, endx, endy;
-                if( !Double.TryParse( parts[1], out startx ) )
+                if( !Double.TryParse( parts[1], NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out startx ) )
                 {
                     Console.WriteLine( $"Log: Invalid line: {line}" );
                     continue;
                 }
-                if( !Double.TryParse( parts[2], out starty ) )
+                if( !Double.TryParse( parts[2], NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out starty ) )
                 {
                     Console.WriteLine( $"Log: Invalid line: {line}" );
                     continue;
                 }
-                if( !Double.TryParse( parts[3], out endx ) )
+                if( !Double.TryParse( parts[3], NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out endx ) )
                 {
                     Console.WriteLine( $"Log: Invalid line: {line}" );
                     continue;
                 }
-                if( !Double.TryParse( parts[4], out endy ) )
+                if( !Double.TryParse( parts[4], NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out endy ) )
                 {
                     Console.WriteLine( $"Log: Invalid line: {line}" );
                     continue;
