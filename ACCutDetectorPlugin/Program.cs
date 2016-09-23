@@ -151,8 +151,6 @@ namespace ACCutDetectorPlugin
                 var section = data.Sections["forwarding"];
 
                 m_forwardingEnabled = Boolean.Parse( section["enabled"] );
-                if( !m_forwardingEnabled )
-                    return true;
 
                 ip = IPAddress.Parse( section["address"] );
                 m_clientCommandPoint = new IPEndPoint( ip, Int32.Parse( section["commandport"] ) );
