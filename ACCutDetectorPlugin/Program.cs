@@ -13,6 +13,10 @@ namespace ACCutDetectorPlugin
 {
     class Program
     {
+        private const uint IOC_IN = 0x80000000;
+        private const uint IOC_VENDOR = 0x18000000;
+        private const uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
+
         private static string m_version = "0.1";
         private static StreamWriter m_logFile;
 
@@ -62,6 +66,12 @@ namespace ACCutDetectorPlugin
             {
                 Console.WriteLine( $"Opening Forwarding UDP Client at {m_clientDataPoint.Address}:{m_clientDataPoint.Port}" );
                 m_forwardClient = new UdpClient( m_clientCommandPoint );
+
+                unchecked
+                {
+                    m_forwardClient.Client.IOControl((int) SIO_UDP_CONNRESET, new byte[] {Convert.ToByte(false)}, null);
+                }
+
                 Console.WriteLine( "Client Opened." );
                 Thread commandThread = new Thread( CommandForwardTask );
                 commandThread.Start();
@@ -69,6 +79,10 @@ namespace ACCutDetectorPlugin
 
             Console.WriteLine( $"Opening UDP Client at {m_serverDataPoint.Address}:{m_serverDataPoint.Port}" );
             m_serverClient = new UdpClient( m_serverDataPoint );
+            unchecked
+            {
+                m_serverClient.Client.IOControl( (int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte( false ) }, null );
+            }
             Console.WriteLine( "Client Opened. Waiting for server." );
 
             while( true )
