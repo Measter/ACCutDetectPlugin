@@ -37,6 +37,8 @@ namespace ACCutDetectorPlugin
 
         public UInt16 Laps { get; private set; }
 
+        public bool DidCutThisLap { get; private set; }
+
 
 
         public Driver( string driverGUID )
@@ -44,6 +46,7 @@ namespace ACCutDetectorPlugin
             Name = String.Empty;
             GUID = driverGUID;
             CarID = 255;
+            DidCutThisLap = false;
             ResetPosition();
             ResetCutCount();
         }
@@ -71,6 +74,7 @@ namespace ACCutDetectorPlugin
         public void IncrementLapcount()
         {
             Laps++;
+            DidCutThisLap = false;
         }
 
         public void UpdatePositionAndSpeed( Vector3F pos, Vector3F vel )
@@ -98,9 +102,12 @@ namespace ACCutDetectorPlugin
             if ( m_speed > 400 )
                 return false;
 
+            bool didCut = CutTester.TestCutLines( new Vector2F( LastPosition.X, LastPosition.Z ),
+                                                  new Vector2F( CurrentPosition.X, CurrentPosition.Z ), out cornerName );
 
-            return CutTester.TestCutLines( new Vector2F( LastPosition.X, LastPosition.Z ),
-                                           new Vector2F( CurrentPosition.X, CurrentPosition.Z ), out cornerName );
+            DidCutThisLap |= didCut;
+            
+            return didCut;
         }
     }
 }

@@ -233,6 +233,12 @@ namespace ACCutDetectorPlugin
         {
             var carID = reader.ReadByte();
             var curDriver = m_driversFromCarID[carID];
+            var laptime = TimeSpan.FromMilliseconds( reader.ReadInt32() );
+
+            if (m_sessionType == SessionType.Qualifying && curDriver.DidCutThisLap)
+            {
+                WriteLog($"[Cut] : [Quali] : {curDriver.Name} - {curDriver.Laps} - {laptime}");
+            }
 
             curDriver.IncrementLapcount();
         }
@@ -248,6 +254,7 @@ namespace ACCutDetectorPlugin
             curDriver.UpdatePositionAndSpeed( pos, vel );
 
             string cornerName;
+            bool prevDidCutThisLap = curDriver.DidCutThisLap;
             if( curDriver.DidCut( out cornerName ) )
             {
                 curDriver.IncrementCut();
@@ -259,7 +266,12 @@ namespace ACCutDetectorPlugin
                 {
                     SendMessageToCar( carID, $"[Warning]: Track limit violation, {cornerName}." );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
-                } else if( curDriver.CutCount % m_warningInterval == 0 )
+                } else if (m_sessionType == SessionType.Qualifying)
+                {
+                    SendMessageToCar(carID, "[Warning]: Track limit volation! Back out of lap." );
+                    Console.WriteLine( $"Warning sent to {curDriver.Name}" );
+                }
+                else if( curDriver.CutCount % m_warningInterval == 0 )
                 {
                     SendMessageToCar( carID, "[Warning]: Track limit volation!" );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
