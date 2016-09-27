@@ -59,7 +59,7 @@ namespace ACCutDetectorPlugin
             {
                 string filename = $"cutlog-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}.log";
                 Console.WriteLine( $"Opening log file {filename}" );
-                m_logFile = new StreamWriter( filename, false, Encoding.UTF8 ); 
+                m_logFile = new StreamWriter( filename, false, Encoding.UTF8 );
             }
 
             if( m_forwardingEnabled )
@@ -69,7 +69,7 @@ namespace ACCutDetectorPlugin
 
                 unchecked
                 {
-                    m_forwardClient.Client.IOControl((int) SIO_UDP_CONNRESET, new byte[] {Convert.ToByte(false)}, null);
+                    m_forwardClient.Client.IOControl( (int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte( false ) }, null );
                 }
 
                 Console.WriteLine( "Client Opened." );
@@ -107,7 +107,7 @@ namespace ACCutDetectorPlugin
                         break;
 
                     case ACSProtocol.LapCompleted:
-                        HandleLapCompleted(reader);
+                        HandleLapCompleted( reader );
                         break;
 
                     case ACSProtocol.NewSession: // Is immediately followed by session info.
@@ -235,9 +235,9 @@ namespace ACCutDetectorPlugin
             var curDriver = m_driversFromCarID[carID];
             var laptime = TimeSpan.FromMilliseconds( reader.ReadInt32() );
 
-            if (m_sessionType == SessionType.Qualifying && curDriver.DidCutThisLap)
+            if( m_sessionType == SessionType.Qualifying && curDriver.DidCutThisLap )
             {
-                WriteLog($"[Cut] : [Quali] : {curDriver.Name} - {curDriver.Laps} - {laptime}");
+                WriteLog( $"[Cut] : [Quali] : {curDriver.Name} - {curDriver.Laps} - {laptime}" );
             }
 
             curDriver.IncrementLapcount();
@@ -266,12 +266,11 @@ namespace ACCutDetectorPlugin
                 {
                     SendMessageToCar( carID, $"[Warning]: Track limit violation, {cornerName}." );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
-                } else if (m_sessionType == SessionType.Qualifying)
+                } else if( m_sessionType == SessionType.Qualifying )
                 {
-                    SendMessageToCar(carID, "[Warning]: Track limit volation! Back out of lap." );
+                    SendMessageToCar( carID, "[Warning]: Track limit volation! Back out of lap." );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
-                }
-                else if( curDriver.CutCount % m_warningInterval == 0 )
+                } else if( curDriver.CutCount % m_warningInterval == 0 )
                 {
                     SendMessageToCar( carID, "[Warning]: Track limit volation!" );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
@@ -353,7 +352,7 @@ namespace ACCutDetectorPlugin
 
                 WriteLog( $"[Session] : Session ended {prevSessionType}" );
 
-                foreach (var driver in m_driversFromGUID)
+                foreach( var driver in m_driversFromGUID )
                 {
                     driver.Value.ResetLapCount();
                     driver.Value.ResetCutCount();

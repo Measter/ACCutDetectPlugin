@@ -35,9 +35,15 @@ namespace ACCutDetectorPlugin
             get; private set;
         }
 
-        public UInt16 Laps { get; private set; }
+        public UInt16 Laps
+        {
+            get; private set;
+        }
 
-        public bool DidCutThisLap { get; private set; }
+        public bool DidCutThisLap
+        {
+            get; private set;
+        }
 
 
 
@@ -99,14 +105,14 @@ namespace ACCutDetectorPlugin
                 return false;
 
             // Absurd speeds are down to lag, so should also ignore.
-            if ( m_speed > 400 )
+            if( m_speed > 400 )
                 return false;
 
             bool didCut = CutTester.TestCutLines( new Vector2F( LastPosition.X, LastPosition.Z ),
                                                   new Vector2F( CurrentPosition.X, CurrentPosition.Z ), out cornerName );
 
             DidCutThisLap |= didCut;
-            
+
             return didCut;
         }
     }
