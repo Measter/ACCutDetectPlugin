@@ -17,7 +17,7 @@ namespace ACCutDetectorPlugin
         private const uint IOC_VENDOR = 0x18000000;
         private const uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
 
-        private static string m_version = "0.1";
+        private static string m_version = "0.2";
         private static StreamWriter m_logFile;
 
         private static readonly Dictionary<string, Driver> m_driversFromGUID = new Dictionary<string, Driver>();
