@@ -268,11 +268,11 @@ namespace ACCutDetectorPlugin
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
                 } else if( m_sessionType == SessionType.Qualifying )
                 {
-                    SendMessageToCar( carID, "[Warning]: Track limit volation! Back out of lap." );
+                    SendMessageToCar( carID, "[Warning]: Track limit violation! Abort lap." );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
                 } else if( curDriver.CutCount % m_warningInterval == 0 )
                 {
-                    SendMessageToCar( carID, "[Warning]: Track limit volation!" );
+                    SendMessageToCar( carID, "[Warning]: Track limit violation!" );
                     Console.WriteLine( $"Warning sent to {curDriver.Name}" );
                 }
             }
