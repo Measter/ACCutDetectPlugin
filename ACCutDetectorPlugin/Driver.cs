@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace ACCutDetectorPlugin
 {
@@ -96,6 +97,29 @@ namespace ACCutDetectorPlugin
         public void AddLap( TimeSpan time )
         {
             m_qualiLaps.Add( new Lap( time, DidCutThisLap ) );
+        }
+
+        public Lap GetBastLap()
+        {
+            if (m_qualiLaps.Count == 0)
+                return new Lap(TimeSpan.Zero, false);
+
+            Lap bestLap = m_qualiLaps.First();
+            foreach (Lap lap in m_qualiLaps)
+            {
+                // Use more than to skip instead of just checking for less then in case the driver matched a previous
+                // best time that included a cut, with a new lap that didn't have a cut.
+                if (lap.LapTime > bestLap.LapTime)
+                    continue;
+
+                // Case for if the driver matched a previous best time, but with a cut. This shouldn't be counted.
+                if (lap.LapTime == bestLap.LapTime && lap.DidCut)
+                    continue;
+
+                bestLap = lap;
+            }
+
+            return bestLap;
         }
 
 
