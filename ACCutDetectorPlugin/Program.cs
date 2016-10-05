@@ -228,6 +228,16 @@ namespace ACCutDetectorPlugin
             }
         }
 
+        private static void OutputCutBestLaps()
+        {
+            foreach( Driver driver in m_driversFromCarID.Values )
+            {
+                Lap bestlap = driver.GetBastLap();
+                if( bestlap.DidCut )
+                    WriteLog( $"[Cut-Quali] : {driver.Name} - {bestlap.LapTime}" );
+            }
+        }
+
 
         private static void HandleLapCompleted( BinaryReader reader )
         {
@@ -235,10 +245,8 @@ namespace ACCutDetectorPlugin
             var curDriver = m_driversFromCarID[carID];
             var laptime = TimeSpan.FromMilliseconds( reader.ReadInt32() );
 
-            if( m_sessionType == SessionType.Qualifying && curDriver.DidCutThisLap )
-            {
-                WriteLog( $"[Cut] : [Quali] : {curDriver.Name} - {curDriver.Laps} - {laptime}" );
-            }
+            if( m_sessionType == SessionType.Qualifying )
+                curDriver.AddLap( laptime );
 
             curDriver.IncrementLapcount();
         }
@@ -349,6 +357,9 @@ namespace ACCutDetectorPlugin
                 }
 
                 Console.WriteLine( $"New session started: {m_sessionType}" );
+
+                if( prevSessionType == SessionType.Qualifying )
+                    OutputCutBestLaps();
 
                 WriteLog( $"[Session] : Session ended {prevSessionType}" );
 
