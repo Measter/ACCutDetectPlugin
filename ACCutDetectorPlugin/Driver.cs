@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace ACCutDetectorPlugin
 {
     public class Driver
     {
         private double m_speed;
+        private readonly List<Lap> m_qualiLaps;
 
         public byte CarID
         {
@@ -45,6 +48,7 @@ namespace ACCutDetectorPlugin
             get; private set;
         }
 
+        public ReadOnlyCollection<Lap> LapTimes => m_qualiLaps.AsReadOnly();
 
 
         public Driver( string driverGUID )
@@ -52,6 +56,7 @@ namespace ACCutDetectorPlugin
             Name = String.Empty;
             GUID = driverGUID;
             CarID = 255;
+            m_qualiLaps = new List<Lap>();
             DidCutThisLap = false;
             ResetPosition();
             ResetCutCount();
@@ -82,6 +87,17 @@ namespace ACCutDetectorPlugin
             Laps++;
             DidCutThisLap = false;
         }
+
+        public void ResetLapTimes()
+        {
+            m_qualiLaps.Clear();
+        }
+
+        public void AddLap( TimeSpan time )
+        {
+            m_qualiLaps.Add( new Lap( time, DidCutThisLap ) );
+        }
+
 
         public void UpdatePositionAndSpeed( Vector3F pos, Vector3F vel )
         {
