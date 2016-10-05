@@ -51,6 +51,7 @@
     <Compile Include="CutTester.cs" />
     <Compile Include="Driver.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Lap.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SessionType.cs" />
