@@ -12,7 +12,7 @@ namespace ACCutDetectorPlugin
         public static void LoadTrack( string track, string trackLayout )
         {
             m_lines.Clear();
-            string filename = $"cut_files\\{track}-{trackLayout}.csv";
+            string filename = Path.Combine("cut_files", $"{track}-{trackLayout}.csv" );
 
             if( !File.Exists( filename ) )
             {
