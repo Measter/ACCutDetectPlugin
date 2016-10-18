@@ -43,6 +43,7 @@ namespace ACCutDetectorPlugin
         private static string m_lastTrackLayout = String.Empty;
         private static bool m_loggingEnabled = false;
         private static bool m_loggingPracticeEnabled = false;
+        private static bool m_suppressSocketError = true;
 
 
         static void Main( string[] args )
@@ -67,10 +68,8 @@ namespace ACCutDetectorPlugin
                 Console.WriteLine( $"Opening Forwarding UDP Client at {m_clientDataPoint.Address}:{m_clientDataPoint.Port}" );
                 m_forwardClient = new UdpClient( m_clientCommandPoint );
 
-                unchecked
-                {
-                    m_forwardClient.Client.IOControl( (int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte( false ) }, null );
-                }
+                if (m_suppressSocketError)
+                    SuppressSocketError( m_forwardClient );
 
                 Console.WriteLine( "Client Opened." );
                 Thread commandThread = new Thread( CommandForwardTask );
@@ -79,10 +78,10 @@ namespace ACCutDetectorPlugin
 
             Console.WriteLine( $"Opening UDP Client at {m_serverDataPoint.Address}:{m_serverDataPoint.Port}" );
             m_serverClient = new UdpClient( m_serverDataPoint );
-            unchecked
-            {
-                m_serverClient.Client.IOControl( (int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte( false ) }, null );
-            }
+
+            if (m_suppressSocketError)
+                SuppressSocketError( m_serverClient );
+
             Console.WriteLine( "Client Opened. Waiting for server." );
 
             while( true )
@@ -135,6 +134,14 @@ namespace ACCutDetectorPlugin
             }
         }
 
+        private static void SuppressSocketError( UdpClient client )
+        {
+            unchecked
+            {
+                client.Client.IOControl((int) SIO_UDP_CONNRESET, new byte[] {Convert.ToByte(false)}, null);
+            }
+        }
+
         private static bool ReadConfig()
         {
             if( !File.Exists( m_configName ) )
@@ -169,6 +176,7 @@ namespace ACCutDetectorPlugin
                 ip = IPAddress.Parse( section["address"] );
                 m_clientCommandPoint = new IPEndPoint( ip, Int32.Parse( section["commandport"] ) );
                 m_clientDataPoint = new IPEndPoint( ip, Int32.Parse( section["dataport"] ) );
+                m_suppressSocketError = Boolean.Parse(section["suppressSocketError"]);
             } catch( Exception ex )
             {
                 Console.WriteLine( "Error: Misconfigured forwarding." );
