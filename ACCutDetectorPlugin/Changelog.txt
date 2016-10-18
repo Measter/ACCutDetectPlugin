@@ -1,0 +1,14 @@
+﻿Version 0.5
+ - Added option to disable suppression of endpoint unavailable error.
+
+Version 0.4
+- Fixed improper path creation when loading cut file to prevent errors on Linux.
+
+Version 0.3
+- Fixed spelling in warning message.
+- Adjusted phrasing in qualification warning message.
+- Changed output of qualifying cut logging to only output if lap was driver's fastest.
+
+Version 0.2
+- Added socket error suppression if end point is unavailable.
+- Added cut logging and warnings during qualifying.
